@@ -1,0 +1,39 @@
+{
+  "name": "xtpoint",
+  "version": "1.0.2",
+  "description": "Extension Points, aka point cuts",
+  "main": "lib/index.js",
+  "jsnext:main": "es/index.js",
+  "module": "es/index.js",
+  "files": [
+    "es",
+    "lib",
+    "umd"
+  ],
+  "scripts": {
+    "build": "nwb build-web-module",
+    "clean": "nwb clean-module",
+    "test": "nwb test",
+    "test:coverage": "nwb test --coverage",
+    "test:watch": "nwb test --server"
+  },
+  "dependencies": {
+    "underscore": "1.8.3"
+  },
+  "devDependencies": {
+    "eslint": "3.10.0",
+    "eslint-loader": "1.5.0",
+    "eslint-plugin-no-for-each": "^0.1.10",
+    "babel-eslint": "7.1.0",
+    "babel-preset-es2015": "6.18.0",
+    "babel-plugin-transform-flow-strip-types": "6.18.0",
+    "chai": "3.5.0",
+    "nwb": "0.12.2",
+    "flow-bin": "0.33.0",
+    "webpack": "^1.13.3"
+  },
+  "author": "absoluteminimum",
+  "homepage": "",
+  "license": "MIT",
+  "repository": "git@github.com:absoluteminimum/xtpoint.git"
+}
