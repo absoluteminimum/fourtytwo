@@ -1,6 +1,6 @@
 {
-  "name": "xtpoint",
-  "version": "1.0.2",
+  "name": "xtpoints",
+  "version": "1.0.3",
   "description": "Extension Points, aka point cuts",
   "main": "lib/index.js",
   "jsnext:main": "es/index.js",
