@@ -44,6 +44,16 @@ describe('xtpoint', () => {
           return 'score!'
         }
       })
+
+      ext.point('canada.multi').extend({
+        id: 'all',
+        first: function() {
+          return 'first1'
+        },
+        second: function() {
+          return {'second': true}
+        }
+      })
     }
     bootstrap(ext, di)
   })
@@ -73,6 +83,11 @@ describe('xtpoint', () => {
     const msg = ext.point('canada.hockey').exec('slapshot', null, 'he shoots...')
     expect(msg).to.eql('he shoots...' + 'score!')
   })
+  it('multi fn exec', () => {
+    const returned = ext.invokeAll('canada.multi', ['first', 'second'])
+    expect(returned).to.eql(['first1', {second: true}])
+  })
+
   it('test loader', () => {
     const modulesContext = require.context('../example', true, /^\.\/[^\/]+?\/bundle\.js$/)
     const loaded = loader(modulesContext, ext, di)
@@ -81,4 +96,5 @@ describe('xtpoint', () => {
     const captain = ext.point('canada.bootstrap').exec('beckonTheDeep')
     expect(captain).to.eql('bill')
   })
+
 })

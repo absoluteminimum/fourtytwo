@@ -6,6 +6,7 @@ type Scope = Object.self
 type Chainable = Object
 type MemoryInitialValue = mixed
 type Invokable = (name: string, context: Scope) => {}
+type StringsOrString = Array<String> | String
 type Extension = {
   id: id,
 }
@@ -19,6 +20,8 @@ type Registry = {
 /**
  * @tutorial
  * http://underscorejs.org/docs/underscore.html#section-174
+ *
+ * - [ ] maybe could pass option to use _ or not
  */
 type OriginalValueModified = mixed
 type UnderscoreWrap = {
@@ -178,11 +181,11 @@ class Point {
 
   /**
    * concatonate arguments with invoke, invoke @this.list
-   *
    */
   invoke(name: ?id, context: ?Scope, ...argsForInvoked: mixed): Chainable {
     const allModules = this.list()
     const args = ['invoke'].concat(Array.from(arguments))
+
     // @marsch: this is done intention, please ask before remove
     try {
       return allModules.invoke.apply(allModules, args)
@@ -199,14 +202,17 @@ class Point {
    * 1) filter plugins to find
    * 2) if found, pass extension to callback and re-sort
    *
-   * @TODO: this only matches ids ===, needs wildcards
+   * @NOTE: was:
+   * const extension = _(this.extensions)
+   *   .chain()
+   *   .filter(function(obj): boolean { return new RegExp(obj.id, 'g').test(id) })
+   *   .first()
+   *   .value()
    */
   get(id: string, callback: Function): Chainable {
-    const extension = _(this.extensions)
-      .chain()
+    const extension = this.extensions
       .filter(function(obj): boolean { return new RegExp(obj.id, 'g').test(id) })
-      .first()
-      .value()
+      .shift()
 
     if (extension) {
       callback(extension)
@@ -309,6 +315,23 @@ const externalApi = {
 
   keys: (): Array => {
     return Object.keys(pointRegistry)
+  },
+
+  /**
+   * call all specified functions on namespace
+   *
+   * @TODO:
+   * - [ ] not have to use .value() & [0]
+   */
+  invokeAll: function(namespace: String, fns: StringsOrString, context = null, ...argsForInvoked: mixed): Array<Extension> {
+    const invoked = []
+
+    if (typeof fns === 'string') fns = [fns]
+
+    for (let i = 0; i < fns.length; i ++)
+      invoked.push(this.point(namespace).invoke(fns[i], context, ...argsForInvoked).value()[0])
+
+    return invoked
   }
 }
 
