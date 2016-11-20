@@ -1,6 +1,5 @@
 node_modules
 .DS_STORE
-package
 npm-debug.log
 npm-debug.log*
 /coverage
