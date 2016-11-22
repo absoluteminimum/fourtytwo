@@ -75,7 +75,7 @@ class Point {
    * @see this.extensions
    */
   list(): UnderscoreWrap {
-    const extensions: Array<?Extension> = this.extensions
+    const extensions: Array<?Extension> = []
 
     // only include if
     // 1) global `*` is not enabled
@@ -323,13 +323,13 @@ const externalApi = {
    * @TODO:
    * - [ ] not have to use .value() & [0]
    */
-  invokeAll: function(namespace: String, fns: StringsOrString, context = null, ...argsForInvoked: mixed): Array<Extension> {
+  invokeAll: (namespace: String, fns: StringsOrString, context = null, ...argsForInvoked: mixed): Array<Extension> => {
     const invoked = []
 
     if (typeof fns === 'string') fns = [fns]
 
     for (let i = 0; i < fns.length; i ++)
-      invoked.push(this.point(namespace).invoke(fns[i], context, ...argsForInvoked).value()[0])
+      invoked.push(externalApi.point(namespace).invoke(fns[i], context, ...argsForInvoked).value()[0])
 
     return invoked
   }

@@ -87,14 +87,32 @@ describe('xtpoint', () => {
     const returned = ext.invokeAll('canada.multi', ['first', 'second'])
     expect(returned).to.eql(['first1', {second: true}])
   })
+  it('disable id works', () => {
+    ext.point('canada.hockey').disable('puck')
+    const msg = ext.point('canada.hockey').exec('slapshot', null, 'he shoots...')
+    expect(msg).to.eql(undefined)
+  })
+  it('enable id works', () => {
+    ext.point('canada.hockey').enable('puck')
+    const msg = ext.point('canada.hockey').exec('slapshot', null, 'he shoots...')
+    expect(msg).to.eql('he shoots...' + 'score!')
+  })
 
   it('test loader', () => {
     const modulesContext = require.context('../example', true, /^\.\/[^\/]+?\/bundle\.js$/)
     const loaded = loader(modulesContext, ext, di)
-    expect(loaded).to.be.true
+    expect(loaded).to.eql(true)
 
     const captain = ext.point('canada.bootstrap').exec('beckonTheDeep')
     expect(captain).to.eql('bill')
+  })
+  it('test loader keys', () => {
+    const modulesContext = require.context('../example', true, /^\.\/[^\/]+?\/bundle\.js$/)
+    loader(modulesContext, ext, di)
+
+    // ['canada.swappable', 'canada.eh', 'canada.hockey', 'canada.multi', 'canada.bootstrap']
+    console.log(ext.keys())
+    expect(ext.keys().length).to.be.at.least(1)
   })
 
 })

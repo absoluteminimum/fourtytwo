@@ -2,7 +2,7 @@ type File = string
 type WebpackContext = (req: File) => {}
 
 export default function loader(modulesContext: WebpackContext, ext: Point, di: ?Object) {
-  if (window && !window.ext)
+  if (typeof window !== "undefined" && typeof window !== undefined && window && !window.ext)
     window.ext = ext
 
   const contextKeys = modulesContext.keys()
