@@ -72,21 +72,16 @@ class Point {
   }
 
   /**
+   * @TODO: use a for loop again
    * @see this.extensions
    */
   list(): UnderscoreWrap {
-    const extensions: Array<?Extension> = []
-
     // only include if
     // 1) global `*` is not enabled
     // 2) it has an id
-    for (let i = 0, len = this.extensions.length; i < len; i++) {
-      const ext = this.extensions[i]
-      if (!this.disabled[ext.id] && !this.disabled['*'])
-        extensions[i] = ext
-    }
-
-    return _.chain(extensions)
+    return _.chain(this.extensions).filter(function(obj) {
+      return !this.disabled[obj.id] && !this.disabled['*']
+    }.bind(this))
   }
 
   /**
