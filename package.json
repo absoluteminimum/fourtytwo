@@ -1,6 +1,6 @@
 {
   "name": "xtpoints",
-  "version": "1.0.10",
+  "version": "1.0.11",
   "description": "Extension Points, aka point cuts",
   "main": "lib/index.js",
   "jsnext:main": "es/index.js",
@@ -11,6 +11,7 @@
     "umd"
   ],
   "scripts": {
+    "prepublish": "nwb build",
     "build": "nwb build-web-module",
     "clean": "nwb clean-module",
     "test": "nwb test",

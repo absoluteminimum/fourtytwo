@@ -2,6 +2,10 @@ import {expect} from 'chai'
 import {ext, loader} from '../src/index'
 const di = {agnosticAndOptional: true}
 
+
+// @TODO:
+// - [ ] test index order
+// - [ ] test scope - showing why we need `function` over bound arrow in methods when invoked
 describe('xtpoint', () => {
   beforeEach(() => {
     const bootstrap = (ext, di) => {
