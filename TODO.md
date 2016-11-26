@@ -1,3 +1,4 @@
 - [ ] add examples
 - [ ] https://medium.com/making-internets/why-using-chain-is-a-mistake-9bc1f80d51ba#.bueabxn33
 - [ ] https://github.com/lodash/lodash-webpack-plugin
+- [ ] change method signature of exec & invoke so context is optional, if it is used, it is the first arg

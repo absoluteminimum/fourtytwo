@@ -1,7 +1,7 @@
 module.exports = {
   type: 'web-module',
   babel: {
-    plugins: ['transform-flow-strip-types']
+    plugins: ['transform-async-to-generator', 'transform-flow-strip-types']
   },
   npm: {
     esModules: true,
