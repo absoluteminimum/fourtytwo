@@ -1,20 +1,20 @@
+// @flow
 import _ from 'underscore'
 
 type id = string
-type int = Number
-type Scope = Object.self
-type ScopeOrString = Scope | String
-type Chainable = Object
+type Int = number
+type Scope = object.self
+type ScopeOrString = Scope | string
+type Chainable = object
 type MemoryInitialValue = mixed
 type Invokable = (name: string, context: Scope) => {}
-type StringsOrString = Array<String> | String
 type Extension = {
-  id: id,
+  id: id
 }
 type Config = {
-  id: id,
+  id: id
 }
-type Registry = {
+type PointRegistry = {
   string: Point
 }
 
@@ -30,7 +30,7 @@ type UnderscoreWrap = {
   // ...all underscorejs functions
 }
 
-const pointRegistry: Registry = {}
+const pointRegistry: PointRegistry = {}
 
 /**
  * create a function to invoke [with a context]
@@ -48,7 +48,7 @@ function createInvoke(point: string, ext: Extension): Invokable {
   }
 }
 
-const indexSorter = (a: Extension, b: Extension): int => {
+const indexSorter = (a: Extension, b: Extension): Int => {
   if (a.index === 'first') return -1
   if (b.index === 'first') return 1
   if (a.index === 'last') return 1
@@ -97,25 +97,25 @@ class Point {
     const afters = this.orphans.after || {}
     const circleGuard = {}
 
-    const fnAddExtension = (ext) => {
+    const fnAddExtension = (ext: Extension) => {
       if (circleGuard[ext.id]) {
         throw new Error('Circular References detected for extension point ' + self.id + ' and extension ' + ext.id)
       }
       circleGuard[ext.id] = true
       const before = befores[ext.id]
       if (before) {
-        delete befores[ext.id]
+        befores[ext.id] = false
         before.sort(indexSorter)
         before.forEach(fnAddExtension)
       }
       this.extensions.push(ext)
       const after = afters[ext.id]
       if (after) {
-        delete afters[ext.id]
+        afters[ext.id] = false
         after.sort(indexSorter)
         after.forEach(fnAddExtension)
       }
-      delete circleGuard[ext.id]
+      circleGuard[ext.id] = false
     }
 
     const extensions = this.extensions
@@ -273,18 +273,18 @@ class Point {
   /**
    * return the object, remove it from the list
    */
-  pluck(id): Array<id>  {
+  pluck(id: string): Array<id>  {
     return this.list().pluck(id).value()
   }
 
-  isEnabled(id): boolean {
+  isEnabled(id: string): boolean {
     return !this.disabled[id] && !this.disabled['*']
   }
 
   /**
    * length of the values in the list
    */
-  count(): int {
+  count(): Int {
     return this.list().value().length
   }
 
@@ -294,8 +294,9 @@ class Point {
    * invoke a fn with a context
    * on every extpoint in this namespace
    *
+   * last param: ...argsForInvoked: mixed
    */
-  invoke(context: ?Scope, name: ?id, ...argsForInvoked: mixed): mixed {
+  invoke(context: ?Scope, name: ?id): mixed {
     const allModules = this.list()
 
     let argsArray = Array.from(arguments)
@@ -311,7 +312,7 @@ class Point {
         argsArray = [
           null,
           // add the rest of the array
-          ...argsArray
+          ...argsArray,
         ]
       }
     }
@@ -320,7 +321,7 @@ class Point {
 
     // @marsch: this is done intention, please ask before remove
     try {
-      return allModules.invoke.apply(allModules, args)
+      return allModules.invoke(...args)
     } catch (e) {
       console.log("could not invoke properly...")
       console.error(e)
@@ -348,13 +349,13 @@ class Point {
         args = [
           null,
           // add the rest of the array
-          ...args
+          ...args,
         ]
       }
     }
 
     // reduce the array result
-    return this.reduce(function(prev, ext) {
+    return this.reduce(function(prev: ?Extension, ext: ?Extension): mixed {
       let extendedArgs = args.slice(2) // skip methodname and context
 
       if (prev)
@@ -368,7 +369,7 @@ class Point {
 
 // shorthand helper funcs -----------
 
-function getContextNameArgs(args) {
+function getContextNameArgs(args: mixed): object {
   let context = null
   let name = args.shift()
 
@@ -385,7 +386,7 @@ function getContextNameArgs(args) {
   return {context, name, args}
 }
 
-function getNamespaceAndFn(name) {
+function getNamespaceAndFn(name: string): object {
   let id = null
 
   // @TODO: support multiple ids
@@ -413,7 +414,7 @@ const pointFrom = (id = ''): Extension => {
 }
 
 // name, ...args
-function externalApi() {
+function externalApi(): mixed {
   const {name, context, args} = getContextNameArgs(Array.from(arguments))
   const {namespace, fn} = getNamespaceAndFn(name)
   return pointFrom(namespace).invoke(context, fn, ...args).value()
@@ -427,7 +428,7 @@ externalApi.keys = (): Array => {
 
 // shorthand helpers -----------
 
-externalApi.exec = function() {
+externalApi.exec = function(): Promise | mixed {
   const {name, context, args} = getContextNameArgs(Array.from(arguments))
   const {namespace, fn, id} = getNamespaceAndFn(name)
 
@@ -438,7 +439,7 @@ externalApi.exec = function() {
   return bundles.value()
 }
 
-externalApi.execAsync = async function() {
+externalApi.execAsync = async function(): mixed {
   const {name, context, args} = getContextNameArgs(Array.from(arguments))
   const {namespace, fn} = getNamespaceAndFn(name)
   const bundles = this.point(namespace).exec(context, fn, ...args)
@@ -446,14 +447,14 @@ externalApi.execAsync = async function() {
   return result
 }
 
-externalApi.invoke = function() {
+externalApi.invoke = function(): Promise | mixed {
   const {name, context, args} = getContextNameArgs(Array.from(arguments))
   const {namespace, fn} = getNamespaceAndFn(name)
   const bundles = this.point(namespace).invoke(context, fn, ...args)
   return bundles.value()
 }
 
-externalApi.invokeAsync = function() {
+externalApi.invokeAsync = function(): mixed {
   const {name, context, args} = getContextNameArgs(Array.from(arguments))
   const {namespace, fn} = getNamespaceAndFn(name)
   const bundles = this.point(namespace).invoke(context, fn, ...args)
@@ -485,10 +486,11 @@ externalApi.invokeAll = function(): Array<Extension> {
   return invoked
 }
 
+
 /**
  * call all specified functions on namespace using .get
  */
 externalApi.callAll = function() {}
-
 externalApi.execAll = function() {}
+
 export default externalApi

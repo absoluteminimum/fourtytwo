@@ -1,6 +1,6 @@
 {
   "name": "xtpoints",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "Extension Points, aka point cuts",
   "main": "lib/index.js",
   "jsnext:main": "es/index.js",
@@ -31,7 +31,8 @@
     "eslint-plugin-no-for-each": "^0.1.10",
     "flow-bin": "0.33.0",
     "nwb": "0.12.2",
-    "webpack": "^1.13.3"
+    "webpack": "^1.13.3",
+    "eslint-plugin-flowtype": "^2.28.2"
   },
   "author": "absoluteminimum",
   "homepage": "",

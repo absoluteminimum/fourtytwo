@@ -13,26 +13,26 @@ describe('xtpoint', function() {
         index: -100,
         render: async function() {
           return 'hot'
-        }
+        },
       })
       ext.point('canada.swappable').extend({
         id: 'swap',
         index: 100,
         render: async function() {
           return 'swap'
-        }
+        },
       })
       ext.point('canada.eh').extend({
         id: 'igloo',
         render: function() {
           return {...arguments, di, ext}
-        }
+        },
       })
       ext.point('canada.eh').extend({
         id: 'moose',
         render: function() {
           return {...arguments, di, ext}
-        }
+        },
       })
       ext.point('canada.hockey').extend({
         id: 'puck',
@@ -48,11 +48,11 @@ describe('xtpoint', function() {
             return arg1 + arg2 + 'scores!'
           }
           return 'score!'
-        }
+        },
       })
       ext.point('canada.scope').extend({
         id: 'scope',
-        thisArg: () => this
+        thisArg: () => this,
       })
 
       ext.point('canada.multi').extend({
@@ -79,34 +79,34 @@ describe('xtpoint', function() {
       ext.point('canada.order').extend({
         id: 'one',
         index: 1,
-        exec: () => 'one'
+        exec: () => 'one',
       })
       ext.point('canada.order').extend({
         id: 'two',
         index: 2,
-        exec: () => 'two'
+        exec: () => 'two',
       })
       ext.point('canada.order').extend({
         id: 'three',
         index: 3,
-        exec: () => 'three'
+        exec: () => 'three',
       })
 
 
       ext.point('canada.chain').extend({
         id: 'one',
         index: 1,
-        exec: () => 'one'
+        exec: () => 'one',
       })
       ext.point('canada.chain').extend({
         id: 'two',
         index: 2,
-        exec: (previousData) => previousData + ' two'
+        exec: (previousData) => previousData + ' two',
       })
       ext.point('canada.chain').extend({
         id: 'three',
         index: 3,
-        exec: (previousData) => previousData + ' three'
+        exec: (previousData) => previousData + ' three',
       })
 
     }
@@ -251,7 +251,7 @@ describe('xtpoint', function() {
     })
     it('should be able to be called as a fn with thisArg', () => {
       const scoped = {
-        propertiesInScope: false
+        propertiesInScope: false,
       }
       const msg = ext(scoped, 'canada.hockey.slapshot', 'he shoots...')[0]
       expect(msg.propertiesInScope).to.eql(true)
@@ -273,9 +273,9 @@ describe('xtpoint', function() {
 
 
   describe('loader', () => {
-    it('test loader', () => {
+    it('test loader - load example folder - using loaders __webpack_require__', () => {
       const modulesContext = require.context('../example', true, /^\.\/[^\/]+?\/bundle\.js$/)
-      const loaded = loader(modulesContext, ext, di)
+      const loaded = loader(modulesContext, null, ext, di)
       expect(loaded).to.eql(true)
 
       const captain = ext.point('canada.bootstrap').exec('beckonTheDeep')
@@ -283,7 +283,7 @@ describe('xtpoint', function() {
     })
     it('test loader keys', () => {
       const modulesContext = require.context('../example', true, /^\.\/[^\/]+?\/bundle\.js$/)
-      loader(modulesContext, ext, di)
+      loader(modulesContext, null, ext, di)
 
       // ['canada.swappable', 'canada.eh', 'canada.hockey', 'canada.multi', 'canada.bootstrap']
       expect(ext.keys().length).to.be.at.least(1)

@@ -1,6 +1,10 @@
 import ext from './ext'
 import loader from './loader'
+import makeGlobal from './global'
 
-export default {ext, loader}
+makeGlobal(ext)
+
+export default {ext, loader, makeGlobal}
 export {ext}
 export {loader}
+export {makeGlobal}
