@@ -1,7 +1,10 @@
 import {expect} from 'chai'
 import {ext, loader} from '../src/index'
 const di = {agnosticAndOptional: true}
+Promise = require('bluebird')
 
+// @TODO:
+// - [ ] split up test files
 describe('xtpoint', function() {
   this.timeout(10000)
 
@@ -96,17 +99,52 @@ describe('xtpoint', function() {
       ext.point('canada.chain').extend({
         id: 'one',
         index: 1,
-        exec: () => 'one',
+        exec: (prevData = '') => prevData + 'one',
       })
       ext.point('canada.chain').extend({
         id: 'two',
         index: 2,
-        exec: (previousData) => previousData + ' two',
+        exec: (previousData = '') => previousData + ' two',
       })
       ext.point('canada.chain').extend({
         id: 'three',
         index: 3,
-        exec: (previousData) => previousData + ' three',
+        exec: (previousData = '') => previousData + ' three',
+      })
+
+      ext.point('canada.async').extend({
+        id: 'one',
+        index: 1,
+        exec: async (prevData = '') => {
+          await Promise.delay(100)
+          return 'one '
+        },
+      })
+      ext.point('canada.async').extend({
+        id: 'two',
+        index: 2,
+        exec: async (previousData) => {
+          var data = await previousData
+          return await new Promise(function(resolve, reject) {
+            if (!data) {
+              return reject('did not have any data passed in')
+            }
+            resolve(data + 'two ')
+          })
+        },
+      })
+      ext.point('canada.async').extend({
+        id: 'three',
+        index: 3,
+        exec: async (previousData) => {
+          var data = await previousData
+          return await new Promise(function(resolve, reject) {
+            if (!data) {
+              return reject('did not have any data passed in')
+            }
+            resolve(data + 'three')
+          })
+        },
       })
 
     }
@@ -185,9 +223,14 @@ describe('xtpoint', function() {
         expect(thisArg[1].wet).to.eql(true)
         expect(scoped.speed).to.eql('0-100')
       })
+      // @TODO:
+      it.skip('multi fn invoke - multi namespace - with no thisArg - no args', async () => {
+        const msg = await ext.invokeAll('canada.multi.first,third;canada.async.exec#three', 'third arg')
+        expect(msg).to.eql(['first1', 'third arg'])
+      })
     })
-  })
 
+  })
 
   describe('executes', () => {
     it('executes plugin - with context/thisArg/scope/bound, without args', () => {
@@ -214,6 +257,11 @@ describe('xtpoint', function() {
     it('exec should pass on the values', () => {
       const values = ext.point('canada.chain').exec('exec')
       expect(values).to.eql('one two three')
+    })
+    it('exec should pass on the values - with args', () => {
+      const pass = 'pass '
+      const values = ext.point('canada.chain').exec('exec', pass)
+      expect(values).to.eql('pass one two three')
     })
   })
 
@@ -268,6 +316,19 @@ describe('xtpoint', function() {
     it(`executes plugin shorthand - with id`, () => {
       const msg = ext.exec('canada.order.exec#two')
       expect(msg).to.eql('two')
+    })
+    it(`executes async plugin shorthand`, async () => {
+      const start = Date.now()
+      const msg = await ext.execAsync('canada.async.exec', 'arg')
+      const diff = Date.now() - start
+      expect(diff).to.be.above(90)
+      expect(msg).to.eql('one two three')
+    })
+    it.skip(`executes async plugin shorthand - and handle errors`, async () => {
+      const msg = await ext.execAsync('canada.async.exec').catch(e => {
+        expect(typeof e.stack).to.eql('string')
+      })
+      expect(msg).to.eql(undefined)
     })
   })
 

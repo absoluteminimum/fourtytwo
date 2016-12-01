@@ -113,15 +113,15 @@ module.exports = {
       2,
       'comma',
     ],
-    'flowtype/require-parameter-type': 2,
+    'flowtype/require-parameter-type': 1,
     'flowtype/require-return-type': [
-      2,
+      1,
       'always',
       {
         'annotateUndefined': 'never',
       },
     ],
-    'flowtype/require-valid-file-annotation': 2,
+    'flowtype/require-valid-file-annotation': 1,
     'flowtype/semi': [
       2,
       'never',

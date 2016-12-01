@@ -342,7 +342,10 @@ class Point {
 
     // if !object, insert null first for context
     if (!(context && typeof context === 'object')) {
-      methodName = context
+      // safeguard, if context was explicitly null
+      if (context) {
+        methodName = context
+      }
       context = null
       // in case it was called with explicit null, or calling externalApi as fn
       if (args[0] !== null) {
@@ -363,6 +366,44 @@ class Point {
 
       extendedArgs = [context, methodName].concat(extendedArgs)
       return ext.invoke.apply(context, extendedArgs)
+    })
+  }
+
+  /**
+   * same as ^, but async
+   * @TODO: http://underscorejs.org/#after
+   */
+  execAsync = async function(context: ?ScopeOrString, methodName: ?string): mixed {
+    // turn arguments(object) into an array
+    let args = Array.from(arguments)
+
+    // if !object, insert null first for context
+    if (!(context && typeof context === 'object')) {
+      // safeguard, if context was explicitly null
+      if (context) {
+        methodName = context
+      }
+
+      context = null
+      // in case it was called with explicit null, or calling externalApi as fn
+      if (args[0] !== null) {
+        args = [
+          null,
+          // add the rest of the array
+          ...args,
+        ]
+      }
+    }
+
+    // reduce the array result
+    return this.reduce(async function(prev: ?Extension, ext: ?Extension): mixed {
+      let extendedArgs = args.slice(2) // skip methodname and context
+
+      if (prev)
+        extendedArgs.unshift(prev) // as this is the first argument
+
+      extendedArgs = [context, methodName].concat(extendedArgs)
+      return await ext.invoke.apply(context, extendedArgs)
     })
   }
 }
@@ -428,7 +469,7 @@ externalApi.keys = (): Array => {
 
 // shorthand helpers -----------
 
-externalApi.exec = function(): Promise | mixed {
+externalApi.exec = function(): array | mixed {
   const {name, context, args} = getContextNameArgs(Array.from(arguments))
   const {namespace, fn, id} = getNamespaceAndFn(name)
 
@@ -436,15 +477,16 @@ externalApi.exec = function(): Promise | mixed {
     return this.point(namespace).get(id)[fn].apply(...args)
 
   const bundles = this.point(namespace).exec(context, fn, ...args)
-  return bundles.value()
+  return bundles
 }
 
 externalApi.execAsync = async function(): mixed {
   const {name, context, args} = getContextNameArgs(Array.from(arguments))
   const {namespace, fn} = getNamespaceAndFn(name)
-  const bundles = this.point(namespace).exec(context, fn, ...args)
-  const result = await Promise.all(bundles.value())
-  return result
+  const bundles = await this.point(namespace).exec(context, fn, ...args)
+  if (bundles[0] === typeof bundles[0].then === 'function')
+    return await Promise.all(bundles)
+  return bundles
 }
 
 externalApi.invoke = function(): Promise | mixed {
