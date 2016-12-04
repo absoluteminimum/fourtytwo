@@ -454,10 +454,41 @@ const pointFrom = (id = ''): Extension => {
   return (pointRegistry[id] = new Point({id: id}))
 }
 
+
+function callFunction(pointWithId, fn, context, args) {
+  const fnToCall = pointWithId[fn]
+  if (!fn) {
+    throw new Error(`${fnToCall} was not a function on ${pointWithId}`)
+  }
+  return fnToCall.apply(context, ...args)
+}
+
+
 // name, ...args
 function externalApi(): mixed {
   const {name, context, args} = getContextNameArgs(Array.from(arguments))
-  const {namespace, fn} = getNamespaceAndFn(name)
+  const {namespace, fn, id} = getNamespaceAndFn(name)
+
+  if (id) {
+    const point = pointFrom(namespace)
+    if (!point.has(id)) {
+      throw new Error(`did not have id (${id}) for namespace (${namespace}), point: ${point}`)
+    }
+
+    const pointWithId = point.get(id)
+
+    // isArray https://jsperf.com/instanceof-array-vs-array-isarray/6
+    if (fn && fn.push && fn.pop) {
+      const results = []
+      for (let i = 0; i < fn.length; i++) {
+        results.push(callFunction(pointWithId, fn[i], context, args))
+      }
+      return results
+    }
+
+    return callFunction(pointWithId, fn, context, args)
+  }
+
   return pointFrom(namespace).invoke(context, fn, ...args).value()
 }
 
@@ -484,7 +515,7 @@ externalApi.execAsync = async function(): mixed {
   const {name, context, args} = getContextNameArgs(Array.from(arguments))
   const {namespace, fn} = getNamespaceAndFn(name)
   const bundles = await this.point(namespace).exec(context, fn, ...args)
-  if (bundles[0] === typeof bundles[0].then === 'function')
+  if (bundles[0] && typeof bundles[0].then === 'function')
     return await Promise.all(bundles)
   return bundles
 }
@@ -492,6 +523,7 @@ externalApi.execAsync = async function(): mixed {
 externalApi.invoke = function(): Promise | mixed {
   const {name, context, args} = getContextNameArgs(Array.from(arguments))
   const {namespace, fn} = getNamespaceAndFn(name)
+
   const bundles = this.point(namespace).invoke(context, fn, ...args)
   return bundles.value()
 }

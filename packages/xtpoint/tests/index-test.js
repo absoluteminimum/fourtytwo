@@ -5,6 +5,7 @@ Promise = require('bluebird')
 
 // @TODO:
 // - [ ] split up test files
+// - [ ] add validation for helpful error messages
 describe('xtpoint', function() {
   this.timeout(10000)
 
@@ -37,6 +38,8 @@ describe('xtpoint', function() {
           return {...arguments, di, ext}
         },
       })
+
+
       ext.point('canada.hockey').extend({
         id: 'puck',
         slapshot: function(arg1, arg2) {
@@ -52,7 +55,21 @@ describe('xtpoint', function() {
           }
           return 'score!'
         },
+        wristshot: function(arg1, arg2) {
+          if (this && !this.wristshot) {
+            this.wristshot = true
+            return this
+          }
+          if (arg1 && !arg2) {
+            return arg1 + 'score!'
+          }
+          if (arg2) {
+            return arg1 + arg2 + 'scores!'
+          }
+          return 'score!'
+        },
       })
+
       ext.point('canada.scope').extend({
         id: 'scope',
         thisArg: () => this,
@@ -311,6 +328,19 @@ describe('xtpoint', function() {
       const thisArg = await ext.invokeAsync(scoped, 'canada.scope.thisArg')
       expect(thisArg[0].title).to.eql('xtpoint')
       expect(thisArg.propertiesInScope).to.eql(undefined)
+    })
+    it(`invokes plugin shorthand - with id - with thisArg`, () => {
+      const scoped = {propertiesInScope: false}
+      const msg = ext(scoped, 'canada.hockey.slapshot#puck')
+      expect(msg.propertiesInScope).to.eql(true)
+      expect(scoped.propertiesInScope).to.eql(true)
+    })
+    it(`invokes plugin shorthand - with array of ids - with thisArg`, () => {
+      const scoped = {propertiesInScope: false}
+      const msg = ext(scoped, 'canada.hockey.slapshot,wristshot#puck')
+      expect(scoped.wristshot).to.eql(true)
+      expect(scoped.propertiesInScope).to.eql(true)
+      expect(msg.length).to.eql(2)
     })
 
     it(`executes plugin shorthand - with id`, () => {
