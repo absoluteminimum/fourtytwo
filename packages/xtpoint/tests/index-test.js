@@ -6,6 +6,7 @@ Promise = require('bluebird')
 // @TODO:
 // - [ ] split up test files
 // - [ ] add validation for helpful error messages
+// - [ ] test xtpoint invoking xtpoints
 describe('xtpoint', function() {
   this.timeout(10000)
 
@@ -164,6 +165,17 @@ describe('xtpoint', function() {
         },
       })
 
+      ext.point('canada.asyncs.eh').extend({
+        id: 'awaits',
+        index: 0,
+        doit: async function(arg1, arg2) {
+          this.propertiesInScope = true
+          return await new Promise(function(resolve, reject) {
+            resolve(arg1 + arg2 + ' yay!')
+          })
+        },
+      })
+
     }
     bootstrap(ext, di)
   })
@@ -318,8 +330,15 @@ describe('xtpoint', function() {
       const scoped = {
         propertiesInScope: false,
       }
-      const msg = ext(scoped, 'canada.hockey.slapshot', 'he shoots...')[0]
+      const [msg] = ext(scoped, 'canada.hockey.slapshot', 'he shoots...')
       expect(msg.propertiesInScope).to.eql(true)
+    })
+
+    it(`invokes plugin shorthand - async - with id - with thisArg - with args`, async () => {
+      const scoped = {propertiesInScope: false}
+      const msg = await ext(scoped, 'canada.asyncs.eh.doit#awaits', 'async', 'await')
+      expect(msg).to.eql('asyncawait yay!')
+      expect(scoped.propertiesInScope).to.eql(true)
     })
 
     it(`invokes plugin shorthand async -
@@ -335,7 +354,21 @@ describe('xtpoint', function() {
       expect(msg.propertiesInScope).to.eql(true)
       expect(scoped.propertiesInScope).to.eql(true)
     })
-    it(`invokes plugin shorthand - with array of ids - with thisArg`, () => {
+    it.skip(`invokes plugin shorthand - with array of ids - with thisArg`, () => {
+      ext.debug = {
+        fn: true,
+        args: true,
+        allArgs: true,
+        id: true,
+        namespace: true,
+        context: true,
+        name: true,
+        func: true,
+        point: true,
+        stacktrace: true,
+        list: true,
+      }
+
       const scoped = {propertiesInScope: false}
       const msg = ext(scoped, 'canada.hockey.slapshot,wristshot#puck')
       expect(scoped.wristshot).to.eql(true)
@@ -381,5 +414,12 @@ describe('xtpoint', function() {
     })
   })
 
+  describe('debug mode', () => {
+    it('should respect debug mode', () => {
+      ext.debug = true
+      const captain = ext.point('canada.bootstrap').exec('beckonTheDeep')
+      expect(captain).to.eql('bill')
+    })
+  })
 
 })

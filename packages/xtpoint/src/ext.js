@@ -30,6 +30,24 @@ type UnderscoreWrap = {
   // ...all underscorejs functions
 }
 
+
+// @TODO: json.stringify too
+// error handling and debugging
+var callbackAsString = function(stackframes) {
+  var stringifiedStack = stackframes.map(function(sf) {
+    return sf.toString()
+  }).join('\n')
+  console.log(stringifiedStack)
+}
+var callbackAsObj = function(stackframes) {
+  var stringifiedStack = stackframes.map(function(sf) {
+    return sf.toString()
+  }).join('\n')
+  console.log(stringifiedStack)
+}
+var errback = function(err) { console.log(err.message) }
+/// ----
+
 const pointRegistry: PointRegistry = {}
 
 /**
@@ -40,6 +58,18 @@ function createInvoke(point: string, ext: Extension): Invokable {
     // remove name & ?context from arguments as an array
     const args = Array.from(arguments).slice(2)
     const fn = ext[name]
+
+    if (typeof externalApi !== 'undefined' && externalApi && externalApi.debug && externalApi.debug.invoked) {
+      console.debug('-------')
+      console.debug('xtpoint invoked: ')
+      console.debug('...point: ', point)
+      console.debug('...ext: ', ext)
+      console.debug('...fn: ', fn)
+      console.debug('...args: ', args)
+      console.debug('...allArgs: ', arguments)
+      console.log('\n\n\n')
+    }
+
     if (fn) {
       return fn.apply(context, args)
     } else {
@@ -325,6 +355,11 @@ class Point {
     } catch (e) {
       console.log("could not invoke properly...")
       console.error(e)
+
+      var StackTrace = require('stacktrace-js')
+      StackTrace.fromError(e).then(callbackAsObj).catch(errback)
+      StackTrace.fromError(e).then(callbackAsString).catch(errback)
+
       return this
     }
   }
@@ -412,6 +447,15 @@ class Point {
 
 function getContextNameArgs(args: mixed): object {
   let context = null
+
+  if (externalApi.debug && externalApi.debug.args) {
+    console.debug('xtpoints debug args: ')
+    for (let i = 0; i < args.length; i++) {
+      console.debug(args[i])
+    }
+    console.debug(';;;args;;; \n')
+  }
+
   let name = args.shift()
 
   // e.g. name.space.fn
@@ -422,6 +466,11 @@ function getContextNameArgs(args: mixed): object {
   if (name && typeof name !== 'string' && typeof name === 'object' ) {
     context = name
     name = args.shift()
+
+    // safety
+    if (!name) {
+      name = context
+    }
   }
 
   return {context, name, args}
@@ -455,38 +504,106 @@ const pointFrom = (id = ''): Extension => {
 }
 
 
-function callFunction(pointWithId, fn, context, args) {
-  const fnToCall = pointWithId[fn]
-  if (!fn) {
-    throw new Error(`${fnToCall} was not a function on ${pointWithId}`)
-  }
-  return fnToCall.apply(context, ...args)
-}
+// function callFunction(pointWithId, fn, context, args) {
+//   const fnToCall = pointWithId[fn]
+//   if (!fn) {
+//     throw new Error(`${fnToCall} was not a function on ${pointWithId}`)
+//   }
+//   return fnToCall.apply(context, ...args)
+// }
 
+
+function debugXtpoints(all) {
+  const {
+    namespace,
+    context,
+    id,
+    fn,
+    name,
+    allArgs,
+    args,
+    type,
+  } = all
+
+  try {
+    // @TODO
+    // if (externalApi.debug.filter)
+    if (externalApi.debug.cb) {
+      return externalApi.debug.cb(all)
+    }
+
+    console.debug('-------------')
+    console.debug('xtpoints. ' + type + ' :')
+    if (externalApi.debug.point)
+      console.debug('...point: ', pointFrom(namespace))
+    if (externalApi.debug.id)
+      console.debug('...id: ', id)
+    if (externalApi.debug.namespace)
+      console.debug('...namespace: ', namespace)
+    if (externalApi.debug.context)
+      console.debug('...context: ', context)
+    if (externalApi.debug.fn)
+      console.debug('...fn: ', fn)
+    if (externalApi.debug.name)
+      console.debug('...name: ', name)
+    if (externalApi.debug.list)
+      console.debug('...func: ', pointFrom(namespace).list())
+    if (externalApi.debug.allArgs)
+      console.debug('...allArgs: ', allArgs)
+    if (externalApi.debug.args)
+      console.debug('...args: ', args)
+    if (externalApi.debug.stacktrace) {
+      console.log('\n\n')
+
+      // @TODO: ASYNC
+      var StackTrace = require('stacktrace-js')
+      StackTrace.get().then(callbackAsObj).catch(errback)
+      StackTrace.get().then(callbackAsString).catch(errback)
+    }
+
+    console.log('\n\n\n')
+  } catch (e) {
+    console.error(e.message, '... could not debug, sorry eh.')
+  }
+}
 
 // name, ...args
 function externalApi(): mixed {
   const {name, context, args} = getContextNameArgs(Array.from(arguments))
+
   const {namespace, fn, id} = getNamespaceAndFn(name)
+
+  if (externalApi.debug) {
+    debugXtpoints({
+      name, context, args,
+      namespace, fn, id,
+      allArgs: Array.from(arguments),
+      type: 'shorthand',
+    })
+  }
+
 
   if (id) {
     const point = pointFrom(namespace)
     if (!point.has(id)) {
       throw new Error(`did not have id (${id}) for namespace (${namespace}), point: ${point}`)
     }
-
     const pointWithId = point.get(id)
-
+    const func = pointWithId[fn]
+    // removed for now
+    // const pointWithId = point.get(id)
     // isArray https://jsperf.com/instanceof-array-vs-array-isarray/6
-    if (fn && fn.push && fn.pop) {
-      const results = []
-      for (let i = 0; i < fn.length; i++) {
-        results.push(callFunction(pointWithId, fn[i], context, args))
-      }
-      return results
-    }
+    // if (fn && fn.push && fn.pop) {
+    //   const results = []
+    //   for (let i = 0; i < fn.length; i++) {
+    //     results.push(pointFrom(namespace).get(id)[fn[i]].apply(context, ...args))
+    //   }
+    //   return results
+    // }
 
-    return callFunction(pointWithId, fn, context, args)
+    // return pointFrom(namespace).get(id)[fn].apply(context, ...args)
+    return (func.apply(context, args))
+    //return callFunction(pointWithId, fn, context, args)
   }
 
   return pointFrom(namespace).invoke(context, fn, ...args).value()
@@ -500,9 +617,23 @@ externalApi.keys = (): Array => {
 
 // shorthand helpers -----------
 
+externalApi.getById = function(name) {
+  const {namespace, fn, id} = getNamespaceAndFn(name)
+  return pointFrom(namespace).get(id)[fn]
+}
+
 externalApi.exec = function(): array | mixed {
   const {name, context, args} = getContextNameArgs(Array.from(arguments))
   const {namespace, fn, id} = getNamespaceAndFn(name)
+
+  if (externalApi.debug) {
+    debugXtpoints({
+      name, context, args,
+      namespace, fn, id,
+      allArgs: Array.from(arguments),
+      type: 'exec',
+    })
+  }
 
   if (id)
     return this.point(namespace).get(id)[fn].apply(...args)
@@ -513,7 +644,17 @@ externalApi.exec = function(): array | mixed {
 
 externalApi.execAsync = async function(): mixed {
   const {name, context, args} = getContextNameArgs(Array.from(arguments))
-  const {namespace, fn} = getNamespaceAndFn(name)
+  const {namespace, fn, id} = getNamespaceAndFn(name)
+
+  if (externalApi.debug) {
+    debugXtpoints({
+      name, context, args,
+      namespace, fn, id,
+      allArgs: Array.from(arguments),
+      type: 'execAsync',
+    })
+  }
+
   const bundles = await this.point(namespace).exec(context, fn, ...args)
   if (bundles[0] && typeof bundles[0].then === 'function')
     return await Promise.all(bundles)
@@ -522,7 +663,16 @@ externalApi.execAsync = async function(): mixed {
 
 externalApi.invoke = function(): Promise | mixed {
   const {name, context, args} = getContextNameArgs(Array.from(arguments))
-  const {namespace, fn} = getNamespaceAndFn(name)
+  const {namespace, fn, id} = getNamespaceAndFn(name)
+
+  if (externalApi.debug) {
+    debugXtpoints({
+      name, context, args,
+      namespace, fn, id,
+      allArgs: Array.from(arguments),
+      type: 'invoke',
+    })
+  }
 
   const bundles = this.point(namespace).invoke(context, fn, ...args)
   return bundles.value()
@@ -530,11 +680,30 @@ externalApi.invoke = function(): Promise | mixed {
 
 externalApi.invokeAsync = function(): mixed {
   const {name, context, args} = getContextNameArgs(Array.from(arguments))
-  const {namespace, fn} = getNamespaceAndFn(name)
+  const {namespace, fn, id} = getNamespaceAndFn(name)
+
+  if (externalApi.debug) {
+    debugXtpoints({
+      name, context, args,
+      namespace, fn, id,
+      allArgs: Array.from(arguments),
+      type: 'invokeAsync',
+    })
+  }
+
+  // if (id) {
+  //   const point = pointFrom(namespace)
+  //   if (!point.has(id)) {
+  //     throw new Error(`did not have id (${id}) for namespace (${namespace}), point: ${point}`)
+  //   }
+  //   const pointWithId = point.get(id)
+  //   const func = pointWithId[fn]
+  //   return await func.apply(context, args))
+  // }
+
   const bundles = this.point(namespace).invoke(context, fn, ...args)
   return Promise.all(bundles.value())
 }
-
 
 /**
  * call all specified functions on namespace
@@ -547,6 +716,15 @@ externalApi.invokeAll = function(): Array<Extension> {
   const {name, context, args} = getContextNameArgs(Array.from(arguments))
   let {namespace, fn} = getNamespaceAndFn(name)
   if (typeof fn === 'string') fn = [fn]
+
+  if (externalApi.debug) {
+    debugXtpoints({
+      name, context, args,
+      namespace, fn, id: null,
+      allArgs: Array.from(arguments),
+      type: 'invokeAll',
+    })
+  }
 
   for (let i = 0; i < fn.length; i ++) {
     const val = this.point(namespace).invoke(context, fn[i], ...args).value()
