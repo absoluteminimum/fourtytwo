@@ -178,6 +178,13 @@ class Point {
     return this
   }
 
+  remove(id) {
+    this.extensions = this.extensions.filter((ext) => {
+      return ext.id !== id
+    })
+    return this
+  }
+
   /**
    * @throws if it already has an invoke method
    *
@@ -197,11 +204,15 @@ class Point {
       extension.index = extension.index || 1000000000
     }
 
-    if (!this.has(extension.id)) {
-      extension.invoke = createInvoke(this, extension)
-      this.extensions.push(extension)
-      this.sort()
+    // remove if exists so it can be replaced
+    // makes hot-reloading and overwrites possible
+    if (this.has(extension.id)) {
+      this.remove(extension.id)
     }
+
+    extension.invoke = createInvoke(this, extension)
+    this.extensions.push(extension)
+    this.sort()
 
     return this
   }
@@ -297,13 +308,6 @@ class Point {
    * return the object, remove it from the list
    */
   pluck(id: string): Array<id> {
-    return this.list().pluck(id).value()
-  }
-
-  /**
-   * return the object, remove it from the list
-   */
-  pluck(id: string): Array<id>  {
     return this.list().pluck(id).value()
   }
 

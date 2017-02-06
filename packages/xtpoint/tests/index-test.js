@@ -422,4 +422,47 @@ describe('xtpoint', function() {
     })
   })
 
+  describe('remove/replaceable', () => {
+    beforeEach(() => {
+      ext.point('germany.removable').extend({
+        id: 'see',
+        exec: () => {
+          return 'x'
+        },
+      })
+      ext.point('germany.removable').extend({
+        id: 'nope',
+        exec: () => {
+          return 'y'
+        },
+      })
+    })
+    it('should remove a specific id from the extension list', () => {
+      const point = ext.point('germany.removable')
+      expect(point.has('nope')).to.equal(true)
+      ext.point('germany.removable').remove('nope')
+      expect(point.has('nope')).to.equal(false)
+    })
+
+    it('should replace a prior registred extension', () => {
+      const point = ext.point('germany.removable')
+      expect(point.has('nope')).to.equal(true)
+      const extension1 = point.get('nope')
+
+      expect(extension1.exec()).to.eql('y')
+
+      //overwrite
+      ext.point('germany.removable').extend({
+        id: 'nope',
+        exec: () => {
+          return 'zzTop'
+        },
+      })
+
+      const extension2 = point.get('nope')
+      expect(extension2.exec()).to.eql('zzTop')
+    })
+
+  })
+
 })
